@@ -1,500 +1,739 @@
 import { useState } from 'react'
-import Link from 'next/link'
+import Head from 'next/head'
 
-export default function Home() {
-  const [showLocationModal, setShowLocationModal] = useState(false)
-  const [selectedSchool, setSelectedSchool] = useState('Select Your School')
-  const [showGiftPanel, setShowGiftPanel] = useState(false)
+export default function App() {
+  const [activeTab, setActiveTab] = useState('home')
+  const [showCheckin, setShowCheckin] = useState(false)
+  const [showGifts, setShowGifts] = useState(false)
+  const [showSongModal, setShowSongModal] = useState(false)
+  const [selectedLocation, setSelectedLocation] = useState(null)
+  const [selectedSong, setSelectedSong] = useState(null)
+  const [flyingGift, setFlyingGift] = useState(null)
+  const [giftsSent, setGiftsSent] = useState([])
+  const [balance] = useState(500)
+  
+  const [currentLive, setCurrentLive] = useState({
+    name: 'Emma S.',
+    school: 'A Plus Education',
+    song: 'Let It Go',
+    emoji: '❄️',
+    viewers: 124
+  })
 
-  const schools = [
-    'A Plus Education Centre',
-    'ABC Primary School',
-    'DEF International School',
-    'GHI Kindergarten',
-    'JKL Learning Centre'
+  const locations = [
+    { id: 1, name: 'A Plus Education Centre', icon: '🏫', students: 45 },
+    { id: 2, name: 'ABC Primary School', icon: '🎓', students: 52 },
+    { id: 3, name: 'DEF International School', icon: '🌐', students: 38 },
+    { id: 4, name: 'GHI Kindergarten', icon: '🌈', students: 28 },
+    { id: 5, name: 'JKL Learning Centre', icon: '📚', students: 30 }
   ]
 
-  const liveNow = [
-    { name: 'Emma S.', school: 'A Plus Education', song: 'Let It Go', viewers: 24, avatar: '👧' },
-    { name: 'Lucas T.', school: 'DEF International', song: 'Do Re Mi', viewers: 18, avatar: '👦' }
+  const songs = [
+    { id: 1, title: 'ABC Song', artist: 'Traditional', difficulty: 'Easy', points: 100, emoji: '🔤' },
+    { id: 2, title: 'Twinkle Twinkle', artist: 'Traditional', difficulty: 'Easy', points: 100, emoji: '⭐' },
+    { id: 3, title: 'Do Re Mi', artist: 'Sound of Music', difficulty: 'Medium', points: 200, emoji: '🎼' },
+    { id: 4, title: 'Let It Go', artist: 'Frozen', difficulty: 'Medium', points: 250, emoji: '❄️' },
+    { id: 5, title: 'Under the Sea', artist: 'Little Mermaid', difficulty: 'Medium', points: 220, emoji: '🐠' },
+    { id: 6, title: 'Circle of Life', artist: 'Lion King', difficulty: 'Hard', points: 300, emoji: '🦁' }
   ]
 
   const gifts = [
     { name: 'Star', icon: '⭐', cost: 10 },
     { name: 'Heart', icon: '❤️', cost: 20 },
-    { name: 'Flower', icon: '🌸', cost: 30 },
-    { name: 'Trophy', icon: '🏆', cost: 50 },
-    { name: 'Crown', icon: '👑', cost: 100 },
-    { name: 'Fireworks', icon: '🎆', cost: 200 }
+    { name: 'Rose', icon: '🌹', cost: 30 },
+    { name: 'Crown', icon: '👑', cost: 50 },
+    { name: 'Rocket', icon: '🚀', cost: 100 },
+    { name: 'Fire', icon: '🔥', cost: 150 },
+    { name: 'Rainbow', icon: '🌈', cost: 80 },
+    { name: 'Trophy', icon: '🏆', cost: 200 }
   ]
 
-  const featuredSongs = [
-    { title: 'ABC Song', difficulty: 'Easy', points: 100, emoji: '🔤' },
-    { title: 'Twinkle Twinkle', difficulty: 'Easy', points: 100, emoji: '⭐' },
-    { title: 'Do Re Mi', difficulty: 'Medium', points: 200, emoji: '🎼' },
-    { title: 'Let It Go', difficulty: 'Medium', points: 250, emoji: '❄️' }
-  ]
-
-  const topPerformers = [
+  const leaderboard = [
     { rank: 1, name: 'Emma S.', score: 2450, avatar: '👧' },
     { rank: 2, name: 'Lucas T.', score: 2180, avatar: '👦' },
-    { rank: 3, name: 'Sophie L.', score: 1950, avatar: '👧' }
+    { rank: 3, name: 'Sophie L.', score: 1950, avatar: '👧' },
+    { rank: 4, name: 'Jayden W.', score: 1820, avatar: '👦' },
+    { rank: 5, name: 'Chloe C.', score: 1750, avatar: '👧' }
   ]
 
-  return (
+  const sendGift = (gift) => {
+    if (balance >= gift.cost) {
+      setFlyingGift(gift)
+      setGiftsSent(prev => [...prev, gift])
+      setTimeout(() => setFlyingGift(null), 2000)
+      setShowGifts(false)
+    } else {
+      alert('Not enough points!')
+    }
+  }
+
+  const renderHome = () => (
     <div>
-      {/* Navigation */}
-      <nav style={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        padding: '1rem 2rem',
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        background: 'rgba(15, 15, 26, 0.95)',
-        backdropFilter: 'blur(10px)',
-        zIndex: 1000,
-        borderBottom: '1px solid rgba(255, 107, 107, 0.2)'
-      }}>
-        <div style={{ fontSize: '1.8rem', fontWeight: 800, background: 'linear-gradient(135deg, #FF6B6B 0%, #FFC857 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+      {/* Header */}
+      <div style={{ padding: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <h1 style={{ fontSize: '24px', fontWeight: 700, background: 'linear-gradient(135deg, #FF4B6E, #FF6B8A)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
           Sing2Learn
-        </div>
-        
-        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-          {/* Location Button */}
+        </h1>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <button 
-            onClick={() => setShowLocationModal(true)}
+            onClick={() => setShowCheckin(true)}
             style={{
-              background: 'rgba(255,255,255,0.15)',
+              background: selectedLocation ? 'rgba(0,217,255,0.2)' : 'rgba(255,75,110,0.2)',
               border: 'none',
-              padding: '10px 20px',
+              padding: '8px 16px',
               borderRadius: '20px',
-              color: '#fff',
+              color: selectedLocation ? '#00D9FF' : '#FF4B6E',
+              fontSize: '14px',
+              fontWeight: 500,
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
-              gap: '8px',
-              fontSize: '0.9rem'
+              gap: '4px'
             }}
           >
-            📍 {selectedSchool}
+            📍 {selectedLocation?.name.split(' ')[0] || 'Check In'}
           </button>
-          
-          <div style={{ display: 'flex', gap: '2rem', listStyle: 'none' }}>
-            <Link href="/" style={{ color: '#fff', textDecoration: 'none' }}>Home</Link>
-            <Link href="/songs" style={{ color: '#c8d2dc', textDecoration: 'none' }}>Songs</Link>
-            <Link href="/live" style={{ color: '#c8d2dc', textDecoration: 'none' }}>Live</Link>
-            <Link href="/leaderboard" style={{ color: '#c8d2dc', textDecoration: 'none' }}>Leaderboard</Link>
+          <div style={{
+            background: 'rgba(255,215,0,0.2)',
+            padding: '6px 12px',
+            borderRadius: '20px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '4px',
+            fontSize: '14px',
+            fontWeight: 600,
+            color: '#FFD700'
+          }}>
+            ⭐ {balance}
           </div>
         </div>
-      </nav>
+      </div>
 
-      {/* Location Modal */}
-      {showLocationModal && (
+      {/* Live Now Section */}
+      <div style={{ padding: '0 20px', marginBottom: '24px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+          <div style={{
+            width: '8px',
+            height: '8px',
+            background: '#FF0000',
+            borderRadius: '50%',
+            animation: 'pulse 2s infinite'
+          }} />
+          <span style={{ fontSize: '14px', fontWeight: 600, color: '#FF4B6E' }}>LIVE NOW</span>
+        </div>
+
         <div style={{
-          position: 'fixed',
-          inset: 0,
-          background: 'rgba(0,0,0,0.8)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 2000
+          position: 'relative',
+          borderRadius: '20px',
+          overflow: 'hidden',
+          background: 'linear-gradient(145deg, #1a1a2e, #0f1419)',
+          aspectRatio: '16/9',
+          border: '1px solid rgba(255,75,110,0.3)'
         }}>
           <div style={{
-            background: '#1a1a2e',
-            padding: '2rem',
-            borderRadius: '20px',
-            width: '400px',
-            maxWidth: '90vw'
+            position: 'absolute',
+            inset: 0,
+            background: 'linear-gradient(135deg, rgba(255,75,110,0.3), rgba(0,217,255,0.2))',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
           }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem' }}>
-              <h3 style={{ color: '#fff' }}>📍 Check In</h3>
-              <button onClick={() => setShowLocationModal(false)} style={{ background: 'none', border: 'none', color: '#fff', fontSize: '1.5rem', cursor: 'pointer' }}>×</button>
-            </div>
-            <p style={{ color: '#a6b2bf', marginBottom: '1.5rem' }}>Select your school to check in</p>
-            
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-              {schools.map((school, i) => (
-                <button
-                  key={i}
-                  onClick={() => {
-                    setSelectedSchool(school)
-                    setShowLocationModal(false)
-                  }}
-                  style={{
-                    background: selectedSchool === school ? 'linear-gradient(135deg, #FF6B6B, #FFC857)' : 'rgba(255,255,255,0.1)',
-                    border: 'none',
-                    padding: '1rem',
-                    borderRadius: '12px',
-                    color: '#fff',
-                    cursor: 'pointer',
-                    textAlign: 'left',
-                    transition: 'all 0.3s'
-                  }}
-                >
-                  🏫 {school}
-                </button>
-              ))}
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: '48px', marginBottom: '8px' }}>{currentLive.emoji}</div>
+              <div style={{ fontWeight: 700, fontSize: '18px' }}>{currentLive.song}</div>
+              <div style={{ color: '#8892A4', fontSize: '14px' }}>by {currentLive.name}</div>
             </div>
           </div>
-        </div>
-      )}
 
-      {/* Hero Section */}
-      <section style={{
-        minHeight: '100vh',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        textAlign: 'center',
-        padding: '6rem 2rem',
+          <div style={{
+            position: 'absolute',
+            top: '12px',
+            left: '12px',
+            background: '#FF0000',
+            padding: '4px 12px',
+            borderRadius: '20px',
+            fontSize: '12px',
+            fontWeight: 700,
+            display: 'flex',
+            alignItems: 'center',
+            gap: '4px'
+          }}>
+            🔴 LIVE
+          </div>
+
+          <div style={{
+            position: 'absolute',
+            top: '12px',
+            right: '12px',
+            background: 'rgba(0,0,0,0.6)',
+            padding: '4px 12px',
+            borderRadius: '20px',
+            fontSize: '12px'
+          }}>
+            👀 {currentLive.viewers + giftsSent.length}
+          </div>
+
+          {/* Flying Gift */}
+          {flyingGift && (
+            <div style={{
+              position: 'absolute',
+              bottom: '60px',
+              left: '50%',
+              transform: 'translateX(-50%)',
+              fontSize: '48px',
+              animation: 'giftFly 2s ease-out forwards'
+            }}>
+              {flyingGift.icon}
+            </div>
+          )}
+
+          {/* Gifts Display */}
+          {giftsSent.length > 0 && (
+            <div style={{
+              position: 'absolute',
+              bottom: '12px',
+              left: '12px',
+              display: 'flex',
+              gap: '4px'
+            }}>
+              {giftsSent.slice(-5).map((g, i) => (
+                <span key={i} style={{ fontSize: '20px' }}>{g.icon}</span>
+              ))}
+            </div>
+          )}
+
+          <button
+            onClick={() => setShowGifts(true)}
+            style={{
+              position: 'absolute',
+              bottom: '12px',
+              right: '12px',
+              background: 'linear-gradient(135deg, #FF4B6E, #FF6B8A)',
+              border: 'none',
+              padding: '10px 20px',
+              borderRadius: '24px',
+              color: 'white',
+              fontWeight: 700,
+              cursor: 'pointer',
+              boxShadow: '0 4px 15px rgba(255,75,110,0.4)'
+            }}
+          >
+            🎁 Send Gift
+          </button>
+        </div>
+      </div>
+
+      {/* Songs Section */}
+      <div style={{ padding: '0 20px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+          <h2 style={{ fontSize: '18px', fontWeight: 600 }}>🎵 Songs</h2>
+          <button 
+            onClick={() => setActiveTab('songs')}
+            style={{ background: 'none', border: 'none', color: '#00D9FF', fontSize: '14px', cursor: 'pointer' }}
+          >
+            See All →
+          </button>
+        </div>
+
+        {songs.slice(0, 3).map(song => (
+          <div
+            key={song.id}
+            onClick={() => {
+              setSelectedSong(song)
+              setShowSongModal(true)
+            }}
+            style={{
+              display: 'flex',
+              gap: '12px',
+              padding: '12px',
+              background: 'rgba(255,255,255,0.05)',
+              border: '1px solid rgba(255,255,255,0.08)',
+              borderRadius: '12px',
+              marginBottom: '8px',
+              cursor: 'pointer'
+            }}
+          >
+            <div style={{
+              width: '52px',
+              height: '52px',
+              borderRadius: '12px',
+              background: song.difficulty === 'Easy' 
+                ? 'linear-gradient(135deg, #00D9FF, #00A8CC)'
+                : song.difficulty === 'Medium'
+                ? 'linear-gradient(135deg, #FFD700, #FFA500)'
+                : 'linear-gradient(135deg, #FF4B6E, #FF6B8A)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '24px'
+            }}>
+              {song.emoji}
+            </div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontWeight: 600, marginBottom: '2px' }}>{song.title}</div>
+              <div style={{ color: '#8892A4', fontSize: '13px' }}>{song.artist}</div>
+              <div style={{ display: 'flex', gap: '8px', marginTop: '6px' }}>
+                <span style={{
+                  padding: '2px 8px',
+                  borderRadius: '10px',
+                  fontSize: '11px',
+                  fontWeight: 600,
+                  background: song.difficulty === 'Easy' 
+                    ? 'rgba(0,217,255,0.2)'
+                    : song.difficulty === 'Medium'
+                    ? 'rgba(255,215,0,0.2)'
+                    : 'rgba(255,75,110,0.2)',
+                  color: song.difficulty === 'Easy' 
+                    ? '#00D9FF'
+                    : song.difficulty === 'Medium'
+                    ? '#FFD700'
+                    : '#FF4B6E'
+                }}>
+                  {song.difficulty}
+                </span>
+                <span style={{ color: '#FFD700', fontSize: '12px', fontWeight: 600 }}>⭐ {song.points}</span>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+
+  const renderSongs = () => (
+    <div>
+      <div style={{ padding: '20px' }}>
+        <h2 style={{ fontSize: '20px', fontWeight: 700, marginBottom: '16px' }}>🎵 Choose a Song</h2>
+        
+        {!selectedLocation && (
+          <div style={{
+            background: 'rgba(255,75,110,0.2)',
+            padding: '12px',
+            borderRadius: '12px',
+            marginBottom: '16px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px'
+          }}>
+            <span>📍</span>
+            <span style={{ fontSize: '14px' }}>Check in at your school to start singing</span>
+            <button
+              onClick={() => setShowCheckin(true)}
+              style={{
+                marginLeft: 'auto',
+                background: '#FF4B6E',
+                border: 'none',
+                padding: '6px 12px',
+                borderRadius: '16px',
+                color: 'white',
+                fontSize: '12px',
+                fontWeight: 600,
+                cursor: 'pointer'
+              }}
+            >
+              Check In
+            </button>
+          </div>
+        )}
+
+        {songs.map(song => (
+          <div
+            key={song.id}
+            onClick={() => {
+              setSelectedSong(song)
+              setShowSongModal(true)
+            }}
+            style={{
+              display: 'flex',
+              gap: '12px',
+              padding: '12px',
+              background: 'rgba(255,255,255,0.05)',
+              border: '1px solid rgba(255,255,255,0.08)',
+              borderRadius: '12px',
+              marginBottom: '8px',
+              cursor: 'pointer'
+            }}
+          >
+            <div style={{
+              width: '56px',
+              height: '56px',
+              borderRadius: '12px',
+              background: song.difficulty === 'Easy' 
+                ? 'linear-gradient(135deg, #00D9FF, #00A8CC)'
+                : song.difficulty === 'Medium'
+                ? 'linear-gradient(135deg, #FFD700, #FFA500)'
+                : 'linear-gradient(135deg, #FF4B6E, #FF6B8A)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '28px'
+            }}>
+              {song.emoji}
+            </div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontWeight: 600, marginBottom: '2px', fontSize: '16px' }}>{song.title}</div>
+              <div style={{ color: '#8892A4', fontSize: '13px' }}>{song.artist}</div>
+              <div style={{ display: 'flex', gap: '8px', marginTop: '6px' }}>
+                <span style={{
+                  padding: '2px 8px',
+                  borderRadius: '10px',
+                  fontSize: '11px',
+                  fontWeight: 600,
+                  background: song.difficulty === 'Easy' 
+                    ? 'rgba(0,217,255,0.2)'
+                    : song.difficulty === 'Medium'
+                    ? 'rgba(255,215,0,0.2)'
+                    : 'rgba(255,75,110,0.2)',
+                  color: song.difficulty === 'Easy' 
+                    ? '#00D9FF'
+                    : song.difficulty === 'Medium'
+                    ? '#FFD700'
+                    : '#FF4B6E'
+                }}>
+                  {song.difficulty}
+                </span>
+                <span style={{ color: '#FFD700', fontSize: '12px', fontWeight: 600 }}>⭐ {song.points} pts</span>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+
+  const renderLive = () => (
+    <div>
+      <div style={{ padding: '20px' }}>
+        <h2 style={{ fontSize: '20px', fontWeight: 700, marginBottom: '16px' }}>🔴 Live Performances</h2>
+      </div>
+      
+      <div style={{
         position: 'relative',
+        borderRadius: '20px',
         overflow: 'hidden',
-        background: 'linear-gradient(135deg, #0F0F1A 0%, #1a1a2e 100%)'
+        margin: '0 20px',
+        background: 'linear-gradient(145deg, #1a1a2e, #0f1419)',
+        aspectRatio: '9/16',
+        maxHeight: '500px',
+        border: '2px solid rgba(255,75,110,0.4)'
       }}>
         <div style={{
           position: 'absolute',
-          top: '-50%',
-          left: '-50%',
-          width: '200%',
-          height: '200%',
-          background: 'radial-gradient(circle at 30% 50%, rgba(255, 107, 107, 0.15) 0%, transparent 50%), radial-gradient(circle at 70% 50%, rgba(78, 205, 196, 0.15) 0%, transparent 50%)',
-          animation: 'float 20s ease-in-out infinite'
-        }} 
-        />
-
-        <div style={{ position: 'relative', zIndex: 1 }}>
-          <h1 style={{
-            fontSize: '4rem',
-            fontWeight: 800,
-            marginBottom: '1rem',
-            background: 'linear-gradient(135deg, #FF6B6B 0%, #FFC857 100%)',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent'
-          }}>
-            🎤 Sing2Learn
-          </h1>
-          <p style={{ fontSize: '1.5rem', color: '#a6b2bf', marginBottom: '2rem' }}>
-            School Singing Competition
-          </p>
-          <p style={{ fontSize: '1.1rem', maxWidth: '600px', margin: '0 auto 2rem', color: '#fff' }}>
-            Sing, earn points, receive gifts from your fans! Check in at your school and compete with students across Hong Kong.
-          </p>
-
-          <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap' }}>
-            <Link href="/songs" className="btn btn-primary" style={{
-              padding: '1rem 2.5rem',
-              borderRadius: '50px',
-              background: 'linear-gradient(135deg, #FF6B6B 0%, #FFC857 100%)',
-              color: '#fff',
-              textDecoration: 'none',
-              fontWeight: 600,
-              boxShadow: '0 4px 20px rgba(255, 107, 107, 0.4)'
-            }}>
-              🎶 Pick a Song
-            </Link>
-            <Link href="/live" className="btn btn-secondary" style={{
-              padding: '1rem 2.5rem',
-              borderRadius: '50px',
-              background: 'transparent',
-              color: '#4ECDC4',
-              border: '2px solid #4ECDC4',
-              textDecoration: 'none',
-              fontWeight: 600
-            }}>
-              📺 Watch Live
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      {/* Live Now Section */}
-      <section style={{ padding: '4rem 2rem', background: '#0F0F1A' }}>
-        <h2 style={{
-          fontSize: '1rem',
-          fontWeight: 500,
-          letterSpacing: '3px',
-          color: '#FF6B6B',
-          marginBottom: '2rem',
-          textTransform: 'uppercase'
-        }}>
-          🔴 Live Now
-        </h2>
-
-        <div style={{ display: 'flex', gap: '2rem', flexWrap: 'wrap' }}>
-          {liveNow.map((performer, i) => (
-            <div key={i} style={{
-              background: 'linear-gradient(145deg, #1a1a2e, #0f1419)',
-              borderRadius: '20px',
-              padding: '1.5rem',
-              flex: '1 1 300px',
-              maxWidth: '400px',
-              border: '2px solid rgba(255, 107, 107, 0.3)'
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1rem' }}>
-                <div style={{
-                  width: '60px',
-                  height: '60px',
-                  borderRadius: '50%',
-                  background: 'linear-gradient(135deg, #FF6B6B, #FFC857)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '2rem'
-                }}>
-                  {performer.avatar}
-                </div>
-                <div>
-                  <div style={{ fontWeight: 600, fontSize: '1.1rem' }}>{performer.name}</div>
-                  <div style={{ color: '#a6b2bf', fontSize: '0.9rem' }}>{performer.school}</div>
-                </div>
-                <div style={{ marginLeft: 'auto', color: '#FF6B6B' }}>
-                  🔴 LIVE
-                </div>
-              </div>
-
-              <div style={{
-                background: '#000',
-                borderRadius: '12px',
-                height: '120px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                marginBottom: '1rem',
-                fontSize: '3rem',
-                border: '1px solid rgba(255,255,255,0.1)'
-              }}>
-                🎵 {performer.song}
-              </div>
-
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ color: '#a6b2bf' }}>👀 {performer.viewers} watching</span>
-                <button
-                  onClick={() => setShowGiftPanel(true)}
-                  style={{
-                    background: 'linear-gradient(135deg, #FF6B6B, #FFC857)',
-                    border: 'none',
-                    padding: '0.5rem 1rem',
-                    borderRadius: '20px',
-                    color: '#fff',
-                    cursor: 'pointer',
-                    fontWeight: 600
-                  }}
-                >
-                  🎁 Send Gift
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* Gift Panel Modal */}
-      {showGiftPanel && (
-        <div style={{
-          position: 'fixed',
           inset: 0,
-          background: 'rgba(0,0,0,0.9)',
+          background: 'linear-gradient(135deg, rgba(255,75,110,0.4), rgba(0,217,255,0.3))',
           display: 'flex',
-          alignItems: 'flex-end',
-          justifyContent: 'center',
-          zIndex: 2000
+          alignItems: 'center',
+          justifyContent: 'center'
         }}>
-          <div style={{
-            background: '#1a1a2e',
-            padding: '2rem',
-            borderRadius: '20px 20px 0 0',
-            width: '100%',
-            maxWidth: '500px'
-          }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
-              <h3 style={{ color: '#fff' }}>🎁 Send a Gift</h3>
-              <button onClick={() => setShowGiftPanel(false)} style={{ background: 'none', border: 'none', color: '#fff', fontSize: '1.5rem', cursor: 'pointer' }}>×</button>
-            </div>
-            
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(3, 1fr)',
-              gap: '1rem'
-            }}>
-              {gifts.map((gift, i) => (
-                <button
-                  key={i}
-                  onClick={() => {
-                    alert(`Sent ${gift.icon} ${gift.name}!`)
-                    setShowGiftPanel(false)
-                  }}
-                  style={{
-                    background: 'rgba(255,255,255,0.1)',
-                    border: '2px solid rgba(255,107,107,0.3)',
-                    borderRadius: '15px',
-                    padding: '1rem',
-                    cursor: 'pointer',
-                    transition: 'all 0.3s'
-                  }}
-                >
-                  <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>{gift.icon}</div>
-                  <div style={{ color: '#fff', fontWeight: 600 }}>{gift.name}</div>
-                  <div style={{ color: '#FFC857', fontSize: '0.9rem' }}>⭐ {gift.cost}</div>
-                </button>
-              ))}
-            </div>
-
-            <div style={{ marginTop: '1.5rem', textAlign: 'center', color: '#a6b2bf' }}>
-              Your balance: ⭐ 500 points
-            </div>
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: '64px', marginBottom: '12px' }}>{currentLive.emoji}</div>
+            <div style={{ fontWeight: 700, fontSize: '24px' }}>{currentLive.song}</div>
+            <div style={{ color: '#8892A4', fontSize: '16px', marginTop: '4px' }}>by {currentLive.name}</div>
+            <div style={{ color: '#00D9FF', fontSize: '14px', marginTop: '4px' }}>🏫 {currentLive.school}</div>
           </div>
         </div>
-      )}
 
-      {/* Songs Section */}
-      <section style={{ padding: '4rem 2rem', background: '#09091c' }}>
-        <h2 style={{
-          fontSize: '1rem',
-          fontWeight: 500,
-          letterSpacing: '3px',
-          color: '#4ECDC4',
-          marginBottom: '2rem',
-          textTransform: 'uppercase'
+        <div style={{
+          position: 'absolute',
+          top: '16px',
+          left: '16px',
+          background: '#FF0000',
+          padding: '6px 14px',
+          borderRadius: '20px',
+          fontSize: '13px',
+          fontWeight: 700
         }}>
-          🎵 Featured Songs
-        </h2>
-
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: '1.5rem' }}>
-          {featuredSongs.map((song, i) => (
-            <div key={i} style={{
-              background: 'linear-gradient(145deg, #1a1a2e, #0f1419)',
-              borderRadius: '20px',
-              overflow: 'hidden',
-              border: '2px solid rgba(78, 205, 196, 0.3)',
-              transition: 'transform 0.3s'
-            }}>
-              <div style={{
-                height: '120px',
-                background: 'linear-gradient(135deg, #4ECDC4 0%, #44A08D 100%)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: '3rem'
-              }}>
-                {song.emoji}
-              </div>
-              <div style={{ padding: '1.5rem' }}>
-                <div style={{ fontWeight: 600, marginBottom: '0.5rem' }}>{song.title}</div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '1rem' }}>
-                  <span style={{
-                    padding: '0.3rem 0.8rem',
-                    borderRadius: '20px',
-                    fontSize: '0.8rem',
-                    background: song.difficulty === 'Easy' ? '#4ECDC4' : '#FFE66D',
-                    color: '#000'
-                  }}>
-                    {song.difficulty}
-                  </span>
-                  <span style={{ color: '#FFC857' }}>⭐ {song.points}</span>
-                </div>
-              </div>
-            </div>
-          ))}
+          🔴 LIVE
         </div>
 
-        <div style={{ textAlign: 'center', marginTop: '2rem' }}>
-          <Link href="/songs" style={{
-            padding: '1rem 2.5rem',
-            borderRadius: '50px',
-            background: 'linear-gradient(135deg, #4ECDC4 0%, #44A08D 100%)',
-            color: '#fff',
-            textDecoration: 'none',
-            fontWeight: 600
+        <div style={{
+          position: 'absolute',
+          top: '16px',
+          right: '16px',
+          background: 'rgba(0,0,0,0.6)',
+          padding: '6px 14px',
+          borderRadius: '20px',
+          fontSize: '13px'
+        }}>
+          👀 {currentLive.viewers + giftsSent.length}
+        </div>
+
+        {flyingGift && (
+          <div style={{
+            position: 'absolute',
+            bottom: '100px',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            fontSize: '64px',
+            animation: 'giftFly 2s ease-out forwards'
           }}>
-            View All Songs →
-          </Link>
-        </div>
-      </section>
+            {flyingGift.icon}
+          </div>
+        )}
 
-      {/* Leaderboard Preview */}
-      <section style={{ padding: '4rem 2rem', background: '#0F0F1A' }}>
-        <h2 style={{
-          fontSize: '1rem',
-          fontWeight: 500,
-          letterSpacing: '3px',
-          color: '#FFC857',
-          marginBottom: '2rem',
-          textTransform: 'uppercase'
-        }}>
-          🏆 Top Performers
-        </h2>
+        {giftsSent.length > 0 && (
+          <div style={{
+            position: 'absolute',
+            bottom: '100px',
+            left: '16px',
+            display: 'flex',
+            gap: '4px'
+          }}>
+            {giftsSent.slice(-6).map((g, i) => (
+              <span key={i} style={{ fontSize: '28px' }}>{g.icon}</span>
+            ))}
+          </div>
+        )}
 
-        <div style={{ maxWidth: '600px', margin: '0 auto' }}>
-          {topPerformers.map((player, i) => (
-            <div key={i} style={{
+        <button
+          onClick={() => setShowGifts(true)}
+          style={{
+            position: 'absolute',
+            bottom: '20px',
+            right: '20px',
+            background: 'linear-gradient(135deg, #FF4B6E, #FF6B8A)',
+            border: 'none',
+            padding: '14px 28px',
+            borderRadius: '30px',
+            color: 'white',
+            fontWeight: 700,
+            fontSize: '16px',
+            cursor: 'pointer',
+            boxShadow: '0 4px 20px rgba(255,75,110,0.5)'
+          }}
+        >
+          🎁 Send Gift
+        </button>
+      </div>
+    </div>
+  )
+
+  const renderLeaderboard = () => (
+    <div>
+      <div style={{ padding: '20px' }}>
+        <h2 style={{ fontSize: '20px', fontWeight: 700, marginBottom: '16px' }}>🏆 Leaderboard</h2>
+        
+        {leaderboard.map(player => (
+          <div
+            key={player.rank}
+            style={{
               display: 'flex',
               alignItems: 'center',
-              gap: '1.5rem',
-              background: '#1a1a2e',
-              padding: '1rem 1.5rem',
-              borderRadius: '15px',
-              marginBottom: '1rem',
-              border: '2px solid transparent'
+              gap: '12px',
+              padding: '14px',
+              background: player.rank <= 3 
+                ? 'linear-gradient(135deg, rgba(255,215,0,0.15), rgba(255,215,0,0.05))'
+                : 'rgba(255,255,255,0.05)',
+              border: player.rank <= 3 
+                ? '1px solid rgba(255,215,0,0.3)'
+                : '1px solid rgba(255,255,255,0.08)',
+              borderRadius: '16px',
+              marginBottom: '8px'
+            }}
+          >
+            <div style={{
+              fontSize: '20px',
+              fontWeight: 800,
+              width: '32px',
+              textAlign: 'center',
+              color: player.rank === 1 ? '#FFD700' : player.rank === 2 ? '#C0C0C0' : player.rank === 3 ? '#CD7F32' : '#8892A4'
             }}>
-              <div style={{
-                fontSize: '1.5rem',
-                fontWeight: 800,
-                width: '50px',
-                color: i === 0 ? '#FFD700' : i === 1 ? '#C0C0C0' : '#CD7F32'
-              }}>
-                #{player.rank}
+              {player.rank <= 3 ? ['🥇', '🥈', '🥉'][player.rank - 1] : `#${player.rank}`}
+            </div>
+            <div style={{
+              width: '44px',
+              height: '44px',
+              borderRadius: '50%',
+              background: 'linear-gradient(135deg, #FF4B6E, #FF6B8A)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '24px'
+            }}>
+              {player.avatar}
+            </div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontWeight: 600, fontSize: '15px' }}>{player.name}</div>
+            </div>
+            <div style={{ textAlign: 'right' }}>
+              <div style={{ color: '#FFD700', fontWeight: 700 }}>{player.score} pts</div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+
+  return (
+    <>
+      <Head>
+        <title>Sing2Learn - School Singing Competition</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+      </Head>
+
+      <div className="app-container">
+        <div className="main-content">
+          {activeTab === 'home' && renderHome()}
+          {activeTab === 'songs' && renderSongs()}
+          {activeTab === 'live' && renderLive()}
+          {activeTab === 'leaderboard' && renderLeaderboard()}
+        </div>
+
+        {/* Bottom Navigation */}
+        <nav className="bottom-nav">
+          <button className={`nav-item ${activeTab === 'home' ? 'active' : ''}`} onClick={() => setActiveTab('home')}>
+            <span className="icon">🏠</span>
+            <span>Home</span>
+          </button>
+          <button className={`nav-item ${activeTab === 'songs' ? 'active' : ''}`} onClick={() => setActiveTab('songs')}>
+            <span className="icon">🎵</span>
+            <span>Songs</span>
+          </button>
+          <button className={`nav-item ${activeTab === 'live' ? 'active' : ''}`} onClick={() => setActiveTab('live')}>
+            <span className="icon">📺</span>
+            <span>Live</span>
+          </button>
+          <button className={`nav-item ${activeTab === 'leaderboard' ? 'active' : ''}`} onClick={() => setActiveTab('leaderboard')}>
+            <span className="icon">🏆</span>
+            <span>Ranks</span>
+          </button>
+        </nav>
+
+        {/* Check-in Modal */}
+        <div 
+          className={`modal-overlay ${showCheckin ? 'visible' : ''}`}
+          onClick={() => setShowCheckin(false)}
+        />
+        <div className={`bottom-sheet ${showCheckin ? 'visible' : ''}`}>
+          <div className="sheet-handle" />
+          <h3 style={{ fontSize: '18px', fontWeight: 600, marginBottom: '4px' }}>📍 Check In</h3>
+          <p style={{ color: '#8892A4', fontSize: '14px', marginBottom: '16px' }}>Select your school</p>
+          
+          {locations.map(loc => (
+            <div
+              key={loc.id}
+              className={`location-item ${selectedLocation?.id === loc.id ? 'selected' : ''}`}
+              onClick={() => {
+                setSelectedLocation(loc)
+                setShowCheckin(false)
+              }}
+            >
+              <span style={{ fontSize: '24px' }}>{loc.icon}</span>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontWeight: 500 }}>{loc.name}</div>
+                <div style={{ color: '#8892A4', fontSize: '12px' }}>{loc.students} students</div>
               </div>
-              <div style={{
-                width: '50px',
-                height: '50px',
-                borderRadius: '50%',
-                background: 'linear-gradient(135deg, #FF6B6B, #FFC857)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: '1.5rem'
-              }}>
-                {player.avatar}
-              </div>
-              <div style={{ flex: 1, fontWeight: 600 }}>{player.name}</div>
-              <div style={{ color: '#FFC857', fontWeight: 700 }}>{player.score} pts</div>
             </div>
           ))}
         </div>
 
-        <div style={{ textAlign: 'center', marginTop: '2rem' }}>
-          <Link href="/leaderboard" style={{
-            color: '#FFC857',
-            textDecoration: 'none',
-            fontWeight: 600
-          }}>
-            View Full Leaderboard →
-          </Link>
+        {/* Gift Modal */}
+        <div 
+          className={`modal-overlay ${showGifts ? 'visible' : ''}`}
+          onClick={() => setShowGifts(false)}
+        />
+        <div className={`bottom-sheet ${showGifts ? 'visible' : ''}`}>
+          <div className="sheet-handle" />
+          <h3 style={{ fontSize: '18px', fontWeight: 600, marginBottom: '4px' }}>🎁 Send a Gift</h3>
+          <p style={{ color: '#FFD700', fontSize: '14px', marginBottom: '16px' }}>Balance: ⭐ {balance}</p>
+          
+          <div className="gift-grid">
+            {gifts.map(gift => (
+              <div
+                key={gift.name}
+                className="gift-item"
+                onClick={() => sendGift(gift)}
+              >
+                <span className="gift-icon">{gift.icon}</span>
+                <span className="gift-name">{gift.name}</span>
+                <span className="gift-cost">⭐ {gift.cost}</span>
+              </div>
+            ))}
+          </div>
         </div>
-      </section>
 
-      {/* Footer */}
-      <footer style={{
-        background: '#09091c',
-        padding: '3rem 2rem',
-        textAlign: 'center',
-        borderTop: '1px solid rgba(255, 107, 107, 0.2)'
-      }}>
-        <p style={{ color: '#a6b2bf' }}>© 2026 Sing2Learn — School Singing Competition</p>
-        <p style={{ marginTop: '0.5rem', fontSize: '0.9rem', color: '#666' }}>
-          Powered by Language Services International (PET) Ltd.
-        </p>
-      </footer>
+        {/* Song Detail Modal */}
+        <div 
+          className={`modal-overlay ${showSongModal ? 'visible' : ''}`}
+          onClick={() => setShowSongModal(false)}
+        />
+        <div className={`bottom-sheet ${showSongModal ? 'visible' : ''}`}>
+          <div className="sheet-handle" />
+          {selectedSong && (
+            <div style={{ textAlign: 'center' }}>
+              <div style={{
+                width: '100px',
+                height: '100px',
+                margin: '0 auto 16px',
+                borderRadius: '20px',
+                background: selectedSong.difficulty === 'Easy' 
+                  ? 'linear-gradient(135deg, #00D9FF, #00A8CC)'
+                  : selectedSong.difficulty === 'Medium'
+                  ? 'linear-gradient(135deg, #FFD700, #FFA500)'
+                  : 'linear-gradient(135deg, #FF4B6E, #FF6B8A)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '48px'
+              }}>
+                {selectedSong.emoji}
+              </div>
+              <h3 style={{ fontSize: '22px', fontWeight: 700 }}>{selectedSong.title}</h3>
+              <p style={{ color: '#8892A4' }}>{selectedSong.artist}</p>
+              <div style={{ display: 'flex', justifyContent: 'center', gap: '16px', margin: '20px 0' }}>
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{ fontSize: '13px', color: '#8892A4' }}>Difficulty</div>
+                  <div style={{ fontWeight: 600, color: selectedSong.difficulty === 'Easy' ? '#00D9FF' : selectedSong.difficulty === 'Medium' ? '#FFD700' : '#FF4B6E' }}>
+                    {selectedSong.difficulty}
+                  </div>
+                </div>
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{ fontSize: '13px', color: '#8892A4' }}>Points</div>
+                  <div style={{ fontWeight: 600, color: '#FFD700' }}>⭐ {selectedSong.points}</div>
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  if (selectedLocation) {
+                    alert('🎤 Starting performance...\n\nFeature coming soon!')
+                  } else {
+                    setShowSongModal(false)
+                    setShowCheckin(true)
+                  }
+                }}
+                style={{
+                  width: '100%',
+                  padding: '16px',
+                  background: selectedLocation 
+                    ? 'linear-gradient(135deg, #FF4B6E, #FF6B8A)'
+                    : 'rgba(255,255,255,0.1)',
+                  border: 'none',
+                  borderRadius: '30px',
+                  color: 'white',
+                  fontSize: '16px',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  boxShadow: selectedLocation ? '0 4px 20px rgba(255,75,110,0.4)' : 'none'
+                }}
+              >
+                {selectedLocation ? '🎤 Start Singing' : '📍 Check In First'}
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
 
-      <style jsx>{`
-        @keyframes float {
-          0%, 100% { transform: translate(0, 0) rotate(0deg); }
-          50% { transform: translate(-5%, 5%) rotate(5deg); }
+      <style jsx global>{`
+        @keyframes pulse {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.5; }
+        }
+        @keyframes giftFly {
+          0% { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
+          100% { opacity: 0; transform: translateX(-50%) translateY(-200px) scale(1.5); }
         }
       `}</style>
-    </div>
+    </>
   )
 }
