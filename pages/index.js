@@ -2,6 +2,9 @@ import { useState, useEffect } from 'react'
 import Head from 'next/head'
 
 export default function App() {
+  const [user, setUser] = useState(null)
+  const [showLogin, setShowLogin] = useState(false)
+  const [loginMode, setLoginMode] = useState('login') // 'login' or 'register'
   const [activeTab, setActiveTab] = useState('home')
   const [showCheckin, setShowCheckin] = useState(false)
   const [showGifts, setShowGifts] = useState(false)
@@ -10,16 +13,23 @@ export default function App() {
   const [selectedSong, setSelectedSong] = useState(null)
   const [flyingGift, setFlyingGift] = useState(null)
   const [giftsSent, setGiftsSent] = useState([])
-  const [balance, setBalance] = useState(500)
-  const [isSinging, setIsSinging] = useState(false)
   const [liveViewers, setLiveViewers] = useState(124)
+  const [loginForm, setLoginForm] = useState({ name: '', email: '', school: '', password: '' })
   
+  const [balance, setBalance] = useState(500)
+
   const [livePerformers] = useState([
     { id: 1, name: 'Emma S.', school: 'A Plus Education', song: 'Let It Go', emoji: '❄️', viewers: 124 },
     { id: 2, name: 'Lucas T.', school: 'DEF International', song: 'Do Re Mi', emoji: '🎼', viewers: 89 }
   ])
 
   const [currentLive, setCurrentLive] = useState(livePerformers[0])
+  
+  // Gift notifications
+  const [giftNotifications, setGiftNotifications] = useState([
+    { id: 1, from: 'Sarah M.', gift: '⭐', to: 'Emma S.', time: '2s ago' },
+    { id: 2, from: 'Tom K.', gift: '❤️', to: 'Emma S.', time: '5s ago' }
+  ])
 
   const locations = [
     { id: 1, name: 'A Plus Education Centre', icon: '🏫', students: 45, distance: '0.5 km' },
@@ -35,14 +45,12 @@ export default function App() {
     { id: 3, title: 'Do Re Mi', artist: 'Sound of Music', difficulty: 'Medium', points: 200, emoji: '🎼', duration: '2:30' },
     { id: 4, title: 'Let It Go', artist: 'Frozen', difficulty: 'Medium', points: 250, emoji: '❄️', duration: '3:45' },
     { id: 5, title: 'Under the Sea', artist: 'Little Mermaid', difficulty: 'Medium', points: 220, emoji: '🐠', duration: '3:15' },
-    { id: 6, title: 'Circle of Life', artist: 'Lion King', difficulty: 'Hard', points: 300, emoji: '🦁', duration: '4:00' },
-    { id: 7, title: 'A Whole New World', artist: 'Aladdin', difficulty: 'Hard', points: 320, emoji: '🕌', duration: '3:30' },
-    { id: 8, title: 'We Are the World', artist: 'USA for Africa', difficulty: 'Hard', points: 350, emoji: '🌍', duration: '4:15' }
+    { id: 6, title: 'Circle of Life', artist: 'Lion King', difficulty: 'Hard', points: 300, emoji: '🦁', duration: '4:00' }
   ]
 
   const gifts = [
     { name: 'Star', icon: '⭐', cost: 10, popular: false },
-    { name: 'Heart', icon: '❤️', cost: 20, popular: false },
+    { name: 'Heart', icon: '❤️', cost: 20, popular: true },
     { name: 'Rose', icon: '🌹', cost: 30, popular: true },
     { name: 'Flower', icon: '🌸', cost: 40, popular: false },
     { name: 'Crown', icon: '👑', cost: 50, popular: true },
@@ -54,15 +62,25 @@ export default function App() {
 
   const leaderboard = [
     { rank: 1, name: 'Emma S.', school: 'A Plus', score: 2450, songs: 12, gifts: 87 },
-    { rank: 2, name: 'Lucas T.', school: 'DEF Int\'l', score: 2180, songs: 10, gifts: 64 },
+    { rank: 2, name: 'Lucas T.', school: "DEF Int'l", score: 2180, songs: 10, gifts: 64 },
     { rank: 3, name: 'Sophie L.', school: 'A Plus', score: 1950, songs: 11, gifts: 52 },
     { rank: 4, name: 'Jayden W.', school: 'ABC Pri', score: 1820, songs: 8, gifts: 48 },
     { rank: 5, name: 'Chloe C.', school: 'JKL', score: 1750, songs: 9, gifts: 41 }
   ]
 
+  // Check for existing user on load
+  useEffect(() => {
+    const savedUser = localStorage.getItem('sing2learn_user')
+    if (savedUser) {
+      setUser(JSON.parse(savedUser))
+    } else {
+      setShowLogin(true)
+    }
+  }, [])
+
   // Simulate live viewer fluctuation
   useEffect(() => {
-    if (activeTab === 'live') {
+    if (activeTab === 'live' && !showLogin) {
       const interval = setInterval(() => {
         setLiveViewers(prev => {
           const change = Math.floor(Math.random() * 5) - 2
@@ -71,13 +89,73 @@ export default function App() {
       }, 3000)
       return () => clearInterval(interval)
     }
-  }, [activeTab])
+  }, [activeTab, showLogin])
+
+  // Simulate gift notifications
+  useEffect(() => {
+    if (activeTab === 'live' && !showLogin) {
+      const names = ['Alex', 'Mia', 'Noah', 'Lily', 'Oscar', 'Emma', 'Leo', 'Ava']
+      const giftIcons = ['⭐', '❤️', '🌹', '👑', '🚀']
+      const interval = setInterval(() => {
+        setGiftNotifications(prev => {
+          const newNotif = {
+            id: Date.now(),
+            from: names[Math.floor(Math.random() * names.length)] + ' ' + ['K', 'L', 'M', 'P', 'S'][Math.floor(Math.random() * 5)] + '.',
+            gift: giftIcons[Math.floor(Math.random() * giftIcons.length)],
+            to: currentLive.name,
+            time: 'now'
+          }
+          return [...prev.slice(-4), newNotif]
+        })
+      }, 5000)
+      return () => clearInterval(interval)
+    }
+  }, [activeTab, showLogin, currentLive])
+
+  const handleLogin = () => {
+    if (!loginForm.name || !loginForm.email) {
+      alert('Please fill in all fields')
+      return
+    }
+    const newUser = {
+      id: Date.now(),
+      name: loginForm.name,
+      email: loginForm.email,
+      school: loginForm.school || locations[0].name,
+      points: 500,
+      joined: new Date().toISOString()
+    }
+    localStorage.setItem('sing2learn_user', JSON.stringify(newUser))
+    setUser(newUser)
+    setShowLogin(false)
+    setSelectedLocation(locations.find(l => l.name === newUser.school) || locations[0])
+  }
+
+  const handleLogout = () => {
+    localStorage.removeItem('sing2learn_user')
+    setUser(null)
+    setShowLogin(true)
+  }
 
   const sendGift = (gift) => {
+    if (!user) {
+      setShowLogin(true)
+      return
+    }
     if (balance >= gift.cost) {
       setBalance(prev => prev - gift.cost)
       setFlyingGift(gift)
       setGiftsSent(prev => [...prev, gift])
+      
+      // Add notification
+      setGiftNotifications(prev => [...prev, {
+        id: Date.now(),
+        from: user.name,
+        gift: gift.icon,
+        to: currentLive.name,
+        time: 'now'
+      }])
+      
       setTimeout(() => setFlyingGift(null), 2000)
       setShowGifts(false)
     } else {
@@ -91,17 +169,205 @@ export default function App() {
       setShowCheckin(true)
       return
     }
-    setIsSinging(true)
-    setActiveTab('live')
     setCurrentLive({
       id: 'me',
-      name: 'You',
+      name: user?.name || 'You',
       school: selectedLocation.name,
       song: selectedSong.title,
       emoji: selectedSong.emoji,
       viewers: 0
     })
     setShowSongModal(false)
+    setActiveTab('live')
+  }
+
+  // Login/Register Screen
+  if (showLogin || !user) {
+    return (
+      <>
+        <Head>
+          <title>Sing2Learn - Login</title>
+          <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+        </Head>
+        <div style={{
+          maxWidth: '430px',
+          margin: '0 auto',
+          minHeight: '100vh',
+          background: 'radial-gradient(circle at 50% 30%, rgba(255,75,110,0.2) 0%, transparent 50%), #050510',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '40px 24px'
+        }}>
+          {/* Logo */}
+          <div style={{
+            fontSize: '48px',
+            marginBottom: '16px',
+            animation: 'float 3s ease-in-out infinite'
+          }}>🎤</div>
+          <h1 style={{
+            fontSize: '32px',
+            fontWeight: 800,
+            background: 'linear-gradient(135deg, #FF4B6E, #FFD700)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            marginBottom: '8px'
+          }}>Sing2Learn</h1>
+          <p style={{ color: '#8892A4', fontSize: '14px', marginBottom: '40px', textAlign: 'center' }}>
+            School Singing Competition<br/>Sing • Earn • Compete
+          </p>
+
+          {/* Login/Register Form */}
+          <div style={{
+            width: '100%',
+            maxWidth: '320px',
+            background: 'rgba(255,255,255,0.04)',
+            border: '1px solid rgba(255,255,255,0.1)',
+            borderRadius: '20px',
+            padding: '28px 24px'
+          }}>
+            <div style={{ display: 'flex', gap: '8px', marginBottom: '24px' }}>
+              <button
+                onClick={() => setLoginMode('login')}
+                style={{
+                  flex: 1,
+                  padding: '10px',
+                  background: loginMode === 'login' ? 'linear-gradient(135deg, #FF4B6E, #FF6B8A)' : 'transparent',
+                  border: loginMode === 'login' ? 'none' : '1px solid rgba(255,255,255,0.2)',
+                  borderRadius: '12px',
+                  color: '#fff',
+                  fontSize: '14px',
+                  fontWeight: 600,
+                  cursor: 'pointer'
+                }}
+              >
+                Login
+              </button>
+              <button
+                onClick={() => setLoginMode('register')}
+                style={{
+                  flex: 1,
+                  padding: '10px',
+                  background: loginMode === 'register' ? 'linear-gradient(135deg, #00D9FF, #00A8CC)' : 'transparent',
+                  border: loginMode === 'register' ? 'none' : '1px solid rgba(255,255,255,0.2)',
+                  borderRadius: '12px',
+                  color: '#fff',
+                  fontSize: '14px',
+                  fontWeight: 600,
+                  cursor: 'pointer'
+                }}
+              >
+                Register
+              </button>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div>
+                <label style={{ display: 'block', color: '#8892A4', fontSize: '12px', marginBottom: '6px' }}>Name</label>
+                <input
+                  type="text"
+                  value={loginForm.name}
+                  onChange={e => setLoginForm({...loginForm, name: e.target.value})}
+                  placeholder="Your name"
+                  style={{
+                    width: '100%',
+                    padding: '12px 16px',
+                    background: 'rgba(255,255,255,0.05)',
+                    border: '1px solid rgba(255,255,255,0.1)',
+                    borderRadius: '12px',
+                    color: '#fff',
+                    fontSize: '15px',
+                    outline: 'none'
+                  }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', color: '#8892A4', fontSize: '12px', marginBottom: '6px' }}>Email</label>
+                <input
+                  type="email"
+                  value={loginForm.email}
+                  onChange={e => setLoginForm({...loginForm, email: e.target.value})}
+                  placeholder="your@email.com"
+                  style={{
+                    width: '100%',
+                    padding: '12px 16px',
+                    background: 'rgba(255,255,255,0.05)',
+                    border: '1px solid rgba(255,255,255,0.1)',
+                    borderRadius: '12px',
+                    color: '#fff',
+                    fontSize: '15px',
+                    outline: 'none'
+                  }}
+                />
+              </div>
+
+              {loginMode === 'register' && (
+                <div>
+                  <label style={{ display: 'block', color: '#8892A4', fontSize: '12px', marginBottom: '6px' }}>School</label>
+                  <select
+                    value={loginForm.school}
+                    onChange={e => setLoginForm({...loginForm, school: e.target.value})}
+                    style={{
+                      width: '100%',
+                      padding: '12px 16px',
+                      background: 'rgba(255,255,255,0.05)',
+                      border: '1px solid rgba(255,255,255,0.1)',
+                      borderRadius: '12px',
+                      color: '#fff',
+                      fontSize: '15px',
+                      outline: 'none'
+                    }}
+                  >
+                    <option value="">Select your school</option>
+                    {locations.map(loc => (
+                      <option key={loc.id} value={loc.name} style={{ background: '#0D0D1A', color: '#fff' }}>{loc.icon} {loc.name}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              <button
+                onClick={handleLogin}
+                style={{
+                  width: '100%',
+                  padding: '14px',
+                  background: loginMode === 'login' 
+                    ? 'linear-gradient(135deg, #FF4B6E, #FF6B8A)'
+                    : 'linear-gradient(135deg, #00D9FF, #00A8CC)',
+                  border: 'none',
+                  borderRadius: '14px',
+                  color: '#fff',
+                  fontSize: '16px',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  marginTop: '8px',
+                  boxShadow: loginMode === 'login' 
+                    ? '0 4px 20px rgba(255,75,110,0.4)'
+                    : '0 4px 20px rgba(0,217,255,0.4)'
+                }}
+              >
+                {loginMode === 'login' ? 'Login' : 'Create Account'}
+              </button>
+            </div>
+          </div>
+
+          <p style={{ color: '#4a4a5a', fontSize: '12px', marginTop: '32px', textAlign: 'center' }}>
+            By continuing, you agree to our Terms of Service
+          </p>
+        </div>
+
+        <style jsx global>{`
+          @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+          }
+          input::placeholder { color: #4a4a5a; }
+          select option { background: #0D0D1A; color: #fff; }
+        `}</style>
+      </>
+    )
   }
 
   const renderHome = () => (
@@ -114,12 +380,28 @@ export default function App() {
         alignItems: 'center',
         background: 'linear-gradient(180deg, rgba(255,75,110,0.1) 0%, transparent 100%)'
       }}>
-        <div>
-          <h1 style={{ fontSize: '22px', fontWeight: 700, margin: 0, color: '#fff' }}>Sing2Learn</h1>
-          <p style={{ fontSize: '12px', color: '#8892A4', margin: '2px 0 0 0' }}>School Singing Competition</p>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div style={{
+            width: '40px',
+            height: '40px',
+            borderRadius: '50%',
+            background: 'linear-gradient(135deg, #FF4B6E, #FF6B8A)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: '18px',
+            fontWeight: 700,
+            color: '#fff'
+          }}>
+            {user.name.charAt(0).toUpperCase()}
+          </div>
+          <div>
+            <div style={{ fontSize: '14px', fontWeight: 600 }}>Hi, {user.name.split(' ')[0]}! 👋</div>
+            <div style={{ fontSize: '11px', color: '#8892A4' }}>{user.school}</div>
+          </div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <button 
+          <button
             onClick={() => setShowCheckin(true)}
             style={{
               background: selectedLocation ? 'linear-gradient(135deg, #00D9FF, #00A8CC)' : 'rgba(255,75,110,0.2)',
@@ -150,6 +432,20 @@ export default function App() {
           }}>
             ⭐ {balance}
           </div>
+          <button
+            onClick={handleLogout}
+            style={{
+              background: 'rgba(255,255,255,0.1)',
+              border: 'none',
+              padding: '8px 12px',
+              borderRadius: '20px',
+              color: '#8892A4',
+              fontSize: '12px',
+              cursor: 'pointer'
+            }}
+          >
+            Logout
+          </button>
         </div>
       </div>
 
@@ -205,10 +501,7 @@ export default function App() {
             padding: '4px 10px',
             borderRadius: '12px',
             fontSize: '11px',
-            fontWeight: 700,
-            display: 'flex',
-            alignItems: 'center',
-            gap: '4px'
+            fontWeight: 700
           }}>
             🔴 LIVE
           </div>
@@ -257,10 +550,6 @@ export default function App() {
             fontSize: '14px',
             fontWeight: 700,
             cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '8px',
             boxShadow: '0 4px 15px rgba(255,75,110,0.3)'
           }}
         >
@@ -277,11 +566,7 @@ export default function App() {
             color: '#00D9FF',
             fontSize: '14px',
             fontWeight: 700,
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '8px'
+            cursor: 'pointer'
           }}
         >
           🏆 Leaderboard
@@ -306,8 +591,7 @@ export default function App() {
               border: '1px solid rgba(255,255,255,0.06)',
               borderRadius: '12px',
               marginBottom: '8px',
-              cursor: 'pointer',
-              transition: 'background 0.2s'
+              cursor: 'pointer'
             }}
           >
             <div style={{
@@ -322,15 +606,14 @@ export default function App() {
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              fontSize: '22px',
-              flexShrink: 0
+              fontSize: '22px'
             }}>
               {song.emoji}
             </div>
-            <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ flex: 1 }}>
               <div style={{ fontWeight: 600, fontSize: '14px', marginBottom: '2px' }}>{song.title}</div>
               <div style={{ color: '#8892A4', fontSize: '12px' }}>{song.artist}</div>
-              <div style={{ display: 'flex', gap: '8px', marginTop: '6px', alignItems: 'center' }}>
+              <div style={{ display: 'flex', gap: '8px', marginTop: '6px' }}>
                 <span style={{
                   padding: '2px 8px',
                   borderRadius: '8px',
@@ -350,10 +633,8 @@ export default function App() {
                   {song.difficulty}
                 </span>
                 <span style={{ color: '#FFD700', fontSize: '11px', fontWeight: 600 }}>⭐{song.points}</span>
-                <span style={{ color: '#8892A4', fontSize: '11px' }}>{song.duration}</span>
               </div>
             </div>
-            <div style={{ color: '#8892A4', fontSize: '18px' }}>›</div>
           </div>
         ))}
       </div>
@@ -399,24 +680,6 @@ export default function App() {
           </div>
         )}
 
-        {selectedLocation && (
-          <div style={{
-            background: 'linear-gradient(135deg, rgba(0,217,255,0.15), rgba(0,168,204,0.1))',
-            border: '1px solid rgba(0,217,255,0.3)',
-            padding: '12px',
-            borderRadius: '12px',
-            marginBottom: '16px',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '10px'
-          }}>
-            <span style={{ fontSize: '20px' }}>✓</span>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontSize: '13px', fontWeight: 600, color: '#00D9FF' }}>Checked in at {selectedLocation.name}</div>
-            </div>
-          </div>
-        )}
-
         {songs.map(song => (
           <div
             key={song.id}
@@ -454,7 +717,7 @@ export default function App() {
             <div style={{ flex: 1 }}>
               <div style={{ fontWeight: 600, fontSize: '15px', marginBottom: '2px' }}>{song.title}</div>
               <div style={{ color: '#8892A4', fontSize: '13px' }}>{song.artist}</div>
-              <div style={{ display: 'flex', gap: '10px', marginTop: '8px', alignItems: 'center' }}>
+              <div style={{ display: 'flex', gap: '10px', marginTop: '8px' }}>
                 <span style={{
                   padding: '3px 10px',
                   borderRadius: '10px',
@@ -474,7 +737,6 @@ export default function App() {
                   {song.difficulty}
                 </span>
                 <span style={{ color: '#FFD700', fontSize: '12px', fontWeight: 600 }}>⭐ {song.points}</span>
-                <span style={{ color: '#8892A4', fontSize: '11px' }}>{song.duration}</span>
               </div>
             </div>
           </div>
@@ -500,16 +762,43 @@ export default function App() {
           padding: '4px 12px',
           borderRadius: '12px',
           fontSize: '12px',
-          fontWeight: 700,
-          display: 'flex',
-          alignItems: 'center',
-          gap: '4px'
+          fontWeight: 700
         }}>
           🔴 LIVE
         </div>
         <div style={{ fontSize: '13px', color: '#8892A4' }}>
           👁 {liveViewers + giftsSent.length}
         </div>
+      </div>
+
+      {/* Gift Notifications */}
+      <div style={{
+        position: 'absolute',
+        top: '70px',
+        right: '16px',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '6px',
+        zIndex: 10,
+        maxWidth: '200px'
+      }}>
+        {giftNotifications.slice(-3).map((notif, i) => (
+          <div key={notif.id} style={{
+            background: 'rgba(0,0,0,0.7)',
+            backdropFilter: 'blur(8px)',
+            padding: '6px 12px',
+            borderRadius: '16px',
+            fontSize: '11px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            animation: 'slideIn 0.3s ease-out'
+          }}>
+            <span style={{ fontWeight: 600, color: '#00D9FF' }}>{notif.from}</span>
+            <span>sent</span>
+            <span style={{ fontSize: '16px' }}>{notif.gift}</span>
+          </div>
+        ))}
       </div>
 
       {/* Live Video Area */}
@@ -538,7 +827,7 @@ export default function App() {
           </div>
         </div>
 
-        {/* Flying Gifts Animation */}
+        {/* Flying Gifts */}
         {flyingGift && (
           <div style={{
             position: 'absolute',
@@ -583,11 +872,7 @@ export default function App() {
             fontSize: '16px',
             fontWeight: 700,
             cursor: 'pointer',
-            boxShadow: '0 4px 20px rgba(255,75,110,0.5)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '8px'
+            boxShadow: '0 4px 20px rgba(255,75,110,0.5)'
           }}
         >
           🎁 Send Gift
@@ -625,9 +910,9 @@ export default function App() {
             }}
           >
             <div style={{
-              width: '32px',
+              width: '28px',
               textAlign: 'center',
-              fontSize: i < 3 ? '24px' : '16px',
+              fontSize: i < 3 ? '22px' : '14px',
               fontWeight: i < 3 ? 400 : 700,
               color: i < 3 ? 'inherit' : '#8892A4'
             }}>
@@ -665,15 +950,13 @@ export default function App() {
         <title>Sing2Learn - School Singing Competition</title>
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
-        <meta name="theme-color" content="#050510" />
       </Head>
 
       <div style={{
         maxWidth: '430px',
         margin: '0 auto',
         minHeight: '100vh',
-        background: 'radial-gradient(circle at 50% 0%, rgba(255,75,110,0.15) 0%, transparent 50%), radial-gradient(circle at 80% 100%, rgba(0,217,255,0.1) 0%, transparent 40%), #050510',
-        position: 'relative',
+        background: 'radial-gradient(circle at 50% 0%, rgba(255,75,110,0.15) 0%, transparent 50%), #050510',
         paddingBottom: '90px'
       }}>
         {/* Main Content */}
@@ -692,7 +975,6 @@ export default function App() {
           right: 0,
           background: 'rgba(13,13,26,0.95)',
           backdropFilter: 'blur(20px)',
-          borderBottom: '1px solid rgba(255,75,110,0.2)',
           padding: '8px 0 28px',
           display: 'flex',
           justifyContent: 'space-around',
@@ -719,15 +1001,10 @@ export default function App() {
                 color: activeTab === tab.id ? '#FF4B6E' : '#8892A4',
                 fontSize: '10px',
                 fontWeight: 500,
-                cursor: 'pointer',
-                transition: 'all 0.2s'
+                cursor: 'pointer'
               }}
             >
-              <span style={{ 
-                fontSize: '22px',
-                filter: activeTab === tab.id ? 'drop-shadow(0 0 8px rgba(255,75,110,0.6))' : 'none',
-                transform: activeTab === tab.id ? 'scale(1.1)' : 'scale(1)'
-              }}>{tab.icon}</span>
+              <span style={{ fontSize: '22px' }}>{tab.icon}</span>
               <span>{tab.label}</span>
             </button>
           ))}
@@ -736,7 +1013,7 @@ export default function App() {
         {/* Check-in Modal */}
         <Modal show={showCheckin} onClose={() => setShowCheckin(false)}>
           <h3 style={{ fontSize: '18px', fontWeight: 600, marginBottom: '4px' }}>📍 Check In</h3>
-          <p style={{ color: '#8892A4', fontSize: '13px', marginBottom: '16px' }}>Select your school to participate</p>
+          <p style={{ color: '#8892A4', fontSize: '13px', marginBottom: '16px' }}>Select your school</p>
           
           {locations.map(loc => (
             <div
@@ -764,7 +1041,6 @@ export default function App() {
                 <div style={{ fontWeight: 500, fontSize: '14px' }}>{loc.name}</div>
                 <div style={{ color: '#8892A4', fontSize: '11px' }}>{loc.students} students • {loc.distance}</div>
               </div>
-              {selectedLocation?.id === loc.id && <span style={{ color: '#FF4B6E' }}>✓</span>}
             </div>
           ))}
         </Modal>
@@ -861,10 +1137,6 @@ export default function App() {
                   <div style={{ fontSize: '12px', color: '#8892A4', marginBottom: '2px' }}>Points</div>
                   <div style={{ fontWeight: 600, color: '#FFD700' }}>⭐ {selectedSong.points}</div>
                 </div>
-                <div style={{ textAlign: 'center' }}>
-                  <div style={{ fontSize: '12px', color: '#8892A4', marginBottom: '2px' }}>Duration</div>
-                  <div style={{ fontWeight: 600 }}>{selectedSong.duration}</div>
-                </div>
               </div>
 
               <button
@@ -880,8 +1152,7 @@ export default function App() {
                   color: 'white',
                   fontSize: '16px',
                   fontWeight: 700,
-                  cursor: 'pointer',
-                  boxShadow: selectedLocation ? '0 4px 20px rgba(255,75,110,0.4)' : 'none'
+                  cursor: 'pointer'
                 }}
               >
                 {selectedLocation ? '🎤 Start Singing' : '📍 Check In First'}
@@ -899,6 +1170,10 @@ export default function App() {
         @keyframes giftFly {
           0% { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
           100% { opacity: 0; transform: translateX(-50%) translateY(-200px) scale(1.5); }
+        }
+        @keyframes slideIn {
+          0% { opacity: 0; transform: translateX(20px); }
+          100% { opacity: 1; transform: translateX(0); }
         }
         * {
           -webkit-tap-highlight-color: transparent;
